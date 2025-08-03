@@ -3,45 +3,30 @@ import cv2
 import numpy as np
 from PIL import Image
 
-st.set_page_config(page_title="Contador de Rollos Apilados", layout="centered")
-st.title("📦 Contador de Rollos Apilados")
+st.set_page_config(page_title="Contador de Rollos", layout="centered")
+st.title("📦 Contador de Rollos desde Foto")
 
-st.write("Sube una foto frontal de los rollos apilados. La app detectará y contará automáticamente cuántos hay.")
+uploaded_file = st.file_uploader("Sube una foto desde tu celular", type=["jpg", "jpeg", "png"])
 
-uploaded_file = st.file_uploader("📸 Sube tu imagen", type=["jpg", "jpeg", "png"])
+if uploaded_file:
+    image = Image.open(uploaded_file)
+    img_np = np.array(image.convert("RGB"))
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert("RGB")
-    image_np = np.array(image)
-    output = image_np.copy()
+    # Preprocesamiento
+    gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
+    blur = cv2.GaussianBlur(gray, (11, 11), 0)
 
-    # Escala de grises y preprocesamiento
-    gray = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY)
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    edged = cv2.Canny(blurred, 50, 150)
+    # Detección de círculos (bordes de rollos)
+    circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, dp=1.2, minDist=50,
+                               param1=100, param2=30, minRadius=20, maxRadius=100)
 
-    # Morfología para cerrar huecos
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 20))
-    closed = cv2.morphologyEx(edged, cv2.MORPH_CLOSE, kernel)
+    # Mostrar resultado
+    result = img_np.copy()
+    count = 0
+    if circles is not None:
+        circles = np.round(circles[0, :]).astype("int")
+        count = len(circles)
+        for (x, y, r) in circles:
+            cv2.circle(result, (x, y), r, (0, 255, 0), 3)
 
-    # Contornos
-    contours, _ = cv2.findContours(closed.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    rollos_detectados = 0
-
-    for cnt in contours:
-        x, y, w, h = cv2.boundingRect(cnt)
-        area = cv2.contourArea(cnt)
-        aspect_ratio = h / float(w)
-
-        if area > 1000 and aspect_ratio > 1.2:
-            cv2.rectangle(output, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            rollos_detectados += 1
-
-    st.image(output, caption=f"Resultado: {rollos_detectados} rollos detectados", channels="RGB")
-
-    if rollos_detectados > 0:
-        st.success(f"✅ Rollos detectados: {rollos_detectados}")
-    else:
-        st.warning("⚠️ No se detectaron rollos. Intenta con otra foto o mejor iluminación.")
-
+    st.image(result, caption=f"Total de rollos detectados: {count}", channels="RGB", use_column_width=True)
