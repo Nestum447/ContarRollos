@@ -3,49 +3,38 @@ import cv2
 import numpy as np
 from PIL import Image
 
-st.title("Contador de Rollos con Visión Artificial")
-st.write("Carga una imagen de rollos para contarlos automáticamente usando OpenCV + Watershed.")
+st.set_page_config(page_title="Contador de Rollos", layout="centered")
+st.title("📦 Contador de Rollos desde Foto")
 
-# Subir imagen
-archivo = st.file_uploader("Sube una imagen", type=["jpg", "jpeg", "png"])
-if archivo:
-    # Leer imagen con PIL y convertir a OpenCV
-    imagen_pil = Image.open(archivo).convert("RGB")
-    img = np.array(imagen_pil)
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+uploaded_file = st.file_uploader("📷 Sube una foto tomada desde tu celular", type=["jpg", "jpeg", "png"])
 
-    # Mostrar imagen original
-    st.image(imagen_pil, caption="Imagen original", use_container_width=True)
+if uploaded_file:
+    image = Image.open(uploaded_file)
+    img_np = np.array(image.convert("RGB"))
 
     # Preprocesamiento
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
+    blur = cv2.GaussianBlur(gray, (11, 11), 0)
 
-    # Morfología
-    kernel = np.ones((3, 3), np.uint8)
-    opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=2)
-    sure_bg = cv2.dilate(opening, kernel, iterations=3)
-    dist_transform = cv2.distanceTransform(opening, cv2.DIST_L2, 5)
-    _, sure_fg = cv2.threshold(dist_transform, 0.6 * dist_transform.max(), 255, 0)
-    sure_fg = np.uint8(sure_fg)
-    unknown = cv2.subtract(sure_bg, sure_fg)
+    # Detección de círculos (bordes de rollos)
+    circles = cv2.HoughCircles(
+        blur,
+        cv2.HOUGH_GRADIENT,
+        dp=1.2,
+        minDist=50,
+        param1=100,
+        param2=30,
+        minRadius=20,
+        maxRadius=100
+    )
 
-    # Marcadores
-    _, markers = cv2.connectedComponents(sure_fg)
-    markers = markers + 1
-    markers[unknown == 255] = 0
+    # Mostrar resultado
+    result = img_np.copy()
+    count = 0
+    if circles is not None:
+        circles = np.round(circles[0, :]).astype("int")
+        count = len(circles)
+        for (x, y, r) in circles:
+            cv2.circle(result, (x, y), r, (0, 255, 0), 3)
 
-    # Watershed
-    markers = cv2.watershed(img, markers)
-    img[markers == -1] = [0, 0, 255]  # Marcar bordes
-
-    # Contar objetos
-    etiquetas = np.unique(markers)
-    num_rollos = len(etiquetas) - 2  # quitar fondo y borde
-
-    st.success(f"🧮 Rollos detectados: {num_rollos}")
-
-    # Convertir a RGB para mostrar en Streamlit
-    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    st.image(img_rgb, caption="Imagen procesada", use_container_width=True)
+    st.image(result, caption=f"✅ Total de rollos detectados: {count}", channels="RGB", use_container_width=True)
