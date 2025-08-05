@@ -4,13 +4,12 @@ import numpy as np
 from PIL import Image
 
 st.set_page_config(page_title="Contador de Rollos", layout="wide")
-
 st.title("📷 Contador de Rollos con OpenCV + Streamlit")
 
-# Imagen de entrada
+# Subir imagen
 uploaded_file = st.file_uploader("Sube una imagen frontal de los rollos", type=["jpg", "jpeg", "png"])
 
-# SIDEBAR – Parámetros ajustables
+# Parámetros ajustables en el sidebar
 st.sidebar.header("🔧 Parámetros de Detección")
 
 dp = st.sidebar.slider("Resolución acumulador (dp)", 1.0, 2.0, 1.2, 0.1)
@@ -20,13 +19,14 @@ param2 = st.sidebar.slider("Param2 (Umbral de detección)", 10, 100, 40)
 minRadius = st.sidebar.slider("Radio mínimo", 0, 100, 20)
 maxRadius = st.sidebar.slider("Radio máximo", 0, 200, 80)
 
-# Procesar imagen
+# Procesamiento de imagen
 if uploaded_file:
     img = Image.open(uploaded_file).convert("RGB")
     img_np = np.array(img)
     gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
     blurred = cv2.GaussianBlur(gray, (9, 9), 2)
 
+    # Detección de círculos
     circles = cv2.HoughCircles(
         blurred,
         cv2.HOUGH_GRADIENT,
@@ -50,7 +50,7 @@ if uploaded_file:
     else:
         st.warning("No se detectaron círculos con los parámetros actuales.")
 
-    st.image(output_img, caption="Resultado", use_column_width=True)
+    st.image(output_img, caption="Resultado", use_container_width=True)
 
     # Tabla explicativa de parámetros
     st.markdown("### 📘 Significado de los parámetros")
