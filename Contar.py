@@ -3,38 +3,47 @@ import cv2
 import numpy as np
 from PIL import Image
 
-st.set_page_config(page_title="Contador de Rollos", layout="centered")
-st.title("📦 Contador de Rollos desde Foto")
+st.set_page_config(layout="centered")
+st.title("🔵 Contador de Rollos (Detección Frontal)")
+st.write("Este sistema detecta rollos vistos desde el frente usando detección de círculos.")
 
-uploaded_file = st.file_uploader("📷 Sube una foto tomada desde tu celular", type=["jpg", "jpeg", "png"])
+# Subir imagen
+archivo = st.file_uploader("Sube una imagen de rollos", type=["jpg", "png", "jpeg"])
+if archivo:
+    # Leer imagen y convertir a formato OpenCV
+    imagen_pil = Image.open(archivo).convert("RGB")
+    imagen_np = np.array(imagen_pil)
+    img = cv2.cvtColor(imagen_np, cv2.COLOR_RGB2BGR)
 
-if uploaded_file:
-    image = Image.open(uploaded_file)
-    img_np = np.array(image.convert("RGB"))
+    # Mostrar imagen original
+    st.image(imagen_pil, caption="Imagen Original", use_container_width=True)
 
     # Preprocesamiento
-    gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
-    blur = cv2.GaussianBlur(gray, (11, 11), 0)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (7, 7), 1.5)
 
-    # Detección de círculos (bordes de rollos)
-    circles = cv2.HoughCircles(
-        blur,
+    # Detectar círculos
+    circulos = cv2.HoughCircles(
+        blurred,
         cv2.HOUGH_GRADIENT,
         dp=1.2,
-        minDist=50,
+        minDist=40,
         param1=100,
         param2=30,
         minRadius=20,
-        maxRadius=100
+        maxRadius=80
     )
 
-    # Mostrar resultado
-    result = img_np.copy()
-    count = 0
-    if circles is not None:
-        circles = np.round(circles[0, :]).astype("int")
-        count = len(circles)
-        for (x, y, r) in circles:
-            cv2.circle(result, (x, y), r, (0, 255, 0), 3)
+    # Dibujar y contar
+    total = 0
+    if circulos is not None:
+        circulos = np.uint16(np.around(circulos))
+        for c in circulos[0, :]:
+            cv2.circle(img, (c[0], c[1]), c[2], (0, 255, 0), 2)
+            cv2.circle(img, (c[0], c[1]), 2, (0, 0, 255), 3)
+        total = len(circulos[0])
 
-    st.image(result, caption=f"✅ Total de rollos detectados: {count}", channels="RGB", use_container_width=True)
+    # Mostrar resultados
+    st.success(f"🧮 Rollos detectados: {total}")
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    st.image(img_rgb, caption="Detección de Círculos", use_container_width=True)
