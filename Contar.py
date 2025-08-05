@@ -30,7 +30,7 @@ if archivo:
         minDist=40,
         param1=100,
         param2=20,
-        minRadius=20,
+        minRadius=30,
         maxRadius=80
     )
 
