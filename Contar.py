@@ -29,8 +29,8 @@ if archivo:
         dp=1.2,
         minDist=90,
         param1=100,
-        param2=30,
-        minRadius=45,
+        param2=35,
+        minRadius=50,
         maxRadius=80
     )
 
