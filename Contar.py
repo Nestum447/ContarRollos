@@ -27,7 +27,7 @@ if archivo:
         blurred,
         cv2.HOUGH_GRADIENT,
         dp=1.2,
-        minDist=20,
+        minDist=90,
         param1=100,
         param2=30,
         minRadius=45,
