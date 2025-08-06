@@ -25,9 +25,9 @@ if archivo is not None:
 
     # Rango de prueba para autoajuste
     dp_vals = [1.2]
-    minDist_vals = [60, 70, 80]
-    param2_vals = [20, 25, 30, 35]
-    minRadius_vals = [30, 35]
+    minDist_vals = [80, 90, 100]
+    param2_vals = [30, 35, 40, 45,50]
+    minRadius_vals = [35, 40]
     maxRadius_vals = [60, 70]
 
     mejor_circulos = None
